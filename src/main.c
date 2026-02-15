@@ -3,20 +3,50 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 
 #define MAX_ARGS 64
 #define MAX_INPUT 1024
 
 
+//structure to hold redirection info
+typedef struct {
+    char *input_file;
+    char *output_file;
+    int append;
+} Redirect;
 
-void parse_command(char *input, char **args) {
+
+void parse_command(char *input, char **args, Redirect *redirect) {
+    // initialize redirect
+    redirect->input_file = NULL;
+    redirect->output_file = NULL;
+    redirect->append = 0;
+
     int i = 0;
     char *token = strtok(input, " \t");
 
     while (token != NULL && i < MAX_ARGS - 1) {
+    	if (strcmp(token, ">") == 0){
+    	    // Next token is output file
+    	    token = strtok(NULL, " \t");
+    	    redirect->output_file = token;
+    	    redirect->append = 0;
+	}
+	else if (strcmp(token, ">>") == 0) {
+	    token = strtok(NULL, " \t");
+	    redirect->output_file = token;
+	    redirect->append = 1;
+	}
+	else if (strcmp(token, "<") == 0) {
+	    token = strtok(NULL, " \t");
+	    redirect->input_file = token;
+	}
+	else {
         args[i] = token;
         i++;
+        }
         token = strtok(NULL, " \t");
     }
     args[i] = NULL;
@@ -24,7 +54,7 @@ void parse_command(char *input, char **args) {
 
 
 
-void execute_command(char **args){
+void execute_command(char **args, Redirect *redirect){
     pid_t pid = fork();
 
     if (pid < 0) {
@@ -34,6 +64,34 @@ void execute_command(char **args){
 
     if (pid == 0){
        //child process
+       //input redirection
+       if (redirect->input_file != NULL){
+           int fd = open(redirect->input_file, O_RDONLY);
+           if (fd < 0) {
+               perror("Input file error");
+               exit(1);
+           }
+           dup2(fd, 0); //replace stdin with file
+           close(fd);
+       }
+
+       //output redirection
+       if (redirect->output_file != NULL){
+           int flags = O_WRONLY | O_CREAT;
+           if (redirect->append){
+               flags |= O_APPEND;
+           } else {
+               flags |= O_TRUNC;
+           }
+           int fd = open(redirect->output_file, flags, 0644);
+           if (fd < 0) {
+               perror("Output file error");
+               exit(1);
+           }
+           dup2(fd, 1);
+           close(fd);
+	}
+	//execute with redirections applied
        if (execvp(args[0], args) == -1){
            perror("Command not found");}
        exit(1);} //if execvp fails
@@ -112,7 +170,8 @@ int main() {
 
         //call the parse function
         char *args[MAX_ARGS];
-        parse_command(input, args);
+        Redirect redirect;
+        parse_command(input, args, &redirect);
 
 
         //print the results of the function
@@ -121,7 +180,7 @@ int main() {
             if (is_builtin(args)) {
                 run_builtin(args);
             } else {
-                execute_command(args);
+                execute_command(args, &redirect);
             }
         }
     }
