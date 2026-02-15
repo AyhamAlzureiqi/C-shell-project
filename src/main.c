@@ -44,6 +44,44 @@ void execute_command(char **args){
 }
 
 
+//check if the command is built in
+int is_builtin(char **args) {
+    if (strcmp(args[0], "cd") == 0)   return 1;
+    if (strcmp(args[0], "pwd") == 0)  return 1;
+    if (strcmp(args[0], "help") == 0) return 1;
+    return 0; }
+
+
+
+//run the built in commands
+void run_builtin(char **args){
+    if (strcmp(args[0], "cd") == 0){
+        if (args[1] == NULL){
+            chdir(getenv("HOME"));}
+          else{
+            if (chdir(args[1]) != 0){
+                perror("cd failed"); }}
+    }
+
+    else if (strcmp(args[0], "pwd") == 0){
+       char cwd[1024];
+       if (getcwd(cwd, sizeof(cwd)) != NULL) {
+           printf("%s\n", cwd); }
+         else {
+           perror("pwd failed"); }
+     }
+
+     else if (strcmp(args[0], "help") == 0){
+         printf("\n=== AiromShell - Available commands ===\n");
+         printf("cd <dir>  - Change directory\n");
+         printf("pwd       - Print current directory\n");
+         printf("help      - Show this help message\n");
+         printf("exit      - Exits the shell\n");
+         printf("Other commands tun as a system command\n");
+         printf("=====================================\n\n");
+     }
+}
+
 
 
 int main() {
@@ -79,9 +117,14 @@ int main() {
 
         //print the results of the function
         if (args[0] != NULL) {
-            execute_command(args);
+            //check if its a built-in command
+            if (is_builtin(args)) {
+                run_builtin(args);
+            } else {
+                execute_command(args);
+            }
         }
-}
+    }
 
 
     return 0;
