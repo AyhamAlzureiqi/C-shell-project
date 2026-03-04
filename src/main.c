@@ -1,3 +1,16 @@
+/*
+* AiromShell is a simple unix shell built on C
+*
+* It Features:
+* - Command execution with arguments
+* - Built-in support for: cd, pwd, help, and exit
+* - I/O redirection with >, <, >>
+* - Single pipe support: cmd1 | cmd2
+*
+* Author: Ayham Zu
+* Date: February 2026
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -25,8 +38,10 @@ typedef struct {
 } Redirect;
 
 
+//parses a command string to a arguments array
 void parse_command(char *input, char **args, Redirect *redirect) {
-    // initialize redirect
+
+    // initialize redirect (stores redirect info)
     redirect->input_file = NULL;
     redirect->output_file = NULL;
     redirect->append = 0;
@@ -58,12 +73,15 @@ void parse_command(char *input, char **args, Redirect *redirect) {
         }
         token = strtok(NULL, " \t");
     }
+    //now it stores parsed arguments
     args[i] = NULL;
 }
 
 
-//check if array has |
+//check if array has | (pipe)
 int has_pipe(char *input){
+
+    //returns 1 if pipe is found, returns 0 otherwise
     for (int i = 0; input[i] != '\0'; i++){
 	if (input[i] == '|') {
 	    return 1; }} return 0;}
@@ -71,6 +89,8 @@ int has_pipe(char *input){
 
 //parse input with |
 void parse_pipe(char *input, PipeInfo *pipe_info){
+
+    //struct to hold parsed commands
     pipe_info->num_commands = 0;
 
     char *token = strtok(input, "|");
@@ -88,20 +108,22 @@ void parse_pipe(char *input, PipeInfo *pipe_info){
 }
 
 
+//excutes two commands connected by a pipe
 void execute_pipe(PipeInfo *pipe_info) {
     if (pipe_info->num_commands != 2) {
 	printf("Only single pipes suppoerted\n");
 	return; }
 
-
+    //pipe info commands will be parsed into cmd
     char cmd1[MAX_INPUT], cmd2[MAX_INPUT];
     strcpy(cmd1, pipe_info->commands[0]);
     strcpy(cmd2, pipe_info->commands[1]);
 
-    //parse the commands
+
     char *args1[MAX_ARGS];
     char *args2[MAX_ARGS];
 
+    //cmd1 into args1
     int i = 0;
     char *token= strtok(cmd1, " \t");
     while (token != NULL && i < MAX_ARGS - 1) {
@@ -110,7 +132,7 @@ void execute_pipe(PipeInfo *pipe_info) {
     args1[i] = NULL;
 
 
-
+    //cmd2 into args2
     i = 0;
     token = strtok(cmd2, " \t");
     while (token != NULL && i < MAX_ARGS - 1){
@@ -130,6 +152,7 @@ void execute_pipe(PipeInfo *pipe_info) {
     pid_t pid1 = fork();
     if (pid1 == 0) {
 
+        //closes the read end
 	close(pipefd[0]);
 	dup2(pipefd[1], 1);
 	close(pipefd[1]);
@@ -143,6 +166,7 @@ void execute_pipe(PipeInfo *pipe_info) {
      pid_t pid2 = fork();
      if (pid2 == 0) {
 
+        //closes write end
 	close(pipefd[1]);
 	dup2(pipefd[0], 0);
 	close(pipefd[0]);
@@ -151,13 +175,14 @@ void execute_pipe(PipeInfo *pipe_info) {
 	perror("Command 2 failed");
 	exit(1); }
 
-
+        //parent closes pipes
 	close(pipefd[0]);
 	close(pipefd[1]);
 
 	waitpid(pid1, NULL, 0);
 	waitpid(pid2, NULL, 0);}
 
+//executes a single command with optional I/O redirection
 void execute_command(char **args, Redirect *redirect){
     pid_t pid = fork();
 
@@ -217,13 +242,14 @@ int is_builtin(char **args) {
 
 //run the built in commands
 void run_builtin(char **args){
+
     //runs cd part, change directory
     if (strcmp(args[0], "cd") == 0){
         if (args[1] == NULL){
             chdir(getenv("HOME"));}
           else{
             if (chdir(args[1]) != 0){
-                perror("cd failed"); }}
+                perror("No such file or directory"); }}
     }
     //runs pwd part, show directory
     else if (strcmp(args[0], "pwd") == 0){
@@ -235,13 +261,22 @@ void run_builtin(char **args){
      }
      //help to show the user the built in commands functions
      else if (strcmp(args[0], "help") == 0){
-         printf("\n=== AiromShell - Available commands ===\n");
-         printf("cd <dir>  - Change directory\n");
-         printf("pwd       - Print current directory\n");
-         printf("help      - Show this help message\n");
-         printf("exit      - Exits the shell\n");
-         printf("Other commands tun as a system command\n");
-         printf("=====================================\n\n");
+	 printf("\n╔════════════════════════════════════════════╗\n");
+         printf("║        AiromShell - Available commands     ║\n");
+	 printf("╠════════════════════════════════════════════╣\n");
+ 	 printf("║ Built-in Commands:                         ║\n");
+         printf("║   cd <dir>  - Change directory             ║\n");
+         printf("║   pwd       - Print current directory      ║\n");
+         printf("║   help      - Show this help message       ║\n");
+         printf("║   exit      - Exits the shell              ║\n");
+	 printf("║                                            ║\n");
+         printf("║ Features:                                  ║\n");
+	 printf("║   >           Redirect output to file      ║\n");
+ 	 printf("║   >>          Append output to file        ║\n");
+	 printf("║   <           Redirect input from file     ║\n");
+	 printf("║   |           Pipe between two commands    ║\n");
+	 printf("║                                            ║\n");
+         printf("╚════════════════════════════════════════════╝\n\n");
      }
 }
 
