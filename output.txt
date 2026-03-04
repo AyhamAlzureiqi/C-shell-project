@@ -1,7 +1,0 @@
-total 36
--rw-r--r-- 1 ayham ayham    28 Feb 15 23:37 files.txt
--rwxrwxr-x 1 ayham ayham 16968 Feb 15 23:35 myshell
--rw-r--r-- 1 ayham ayham     0 Feb 18 22:29 output.txt
--rw-r--r-- 1 ayham ayham    13 Feb 15 23:38 results.txt
-drwxrwxr-x 2 ayham ayham  4096 Feb 18 22:20 src
--rw-r--r-- 1 ayham ayham    12 Feb 15 23:40 test.txt
