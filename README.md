@@ -19,12 +19,12 @@ make
 
 Or compile manually:
 ```bash
-gcc src/main.c -o myshell
+gcc src/main.c -o airomsShell
 ```
 
 ## Usage
 ```bash
-./myshell
+./airomsShell
 ```
 
 ### Example Commands
@@ -71,7 +71,7 @@ The shell operates in a Read-Eval-Print Loop (REPL):
 
 ## Project Structure
 ```
-myshell/
+airomsShell/
 ├── src/
 │   └── main.c          # Main shell implementation
 ├── README.md           # This file
